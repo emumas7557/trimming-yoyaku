@@ -10,8 +10,15 @@
     h2 { text-align: center; color: #00b900; margin-top: 0; margin-bottom: 10px; }
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
     label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555; }
-    input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
-    textarea { height: 150px; resize: vertical; line-height: 1.5; }
+    input[type="text"], input[type="tel"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
+    textarea { height: 100px; resize: vertical; line-height: 1.5; }
+    
+    /* ラジオボタンのデザイン */
+    .radio-group { margin-top: 5px; }
+    .radio-label { display: block; padding: 10px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; }
+    .radio-label:last-child { border-bottom: none; }
+    .radio-label input { margin-right: 10px; transform: scale(1.2); }
+
     .date-display { display: flex; gap: 10px; margin-bottom: 10px; }
     .date-box { flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 8px; text-align: center; background: #fafafa; cursor: pointer; }
     .date-box.active { border-color: #00b900; background: #e6f9e6; color: #00b900; font-weight: bold; }
@@ -43,13 +50,13 @@
     <div id="status-bar">🔴 LINE未連携（通知が届きません）</div>
     <div id="login-area">
       <div style="font-size:13px;color:#666;margin-bottom:5px;">▼ 予約の控えを受け取るには連携してください ▼</div>
-      <!-- ★LIFF IDはそのまま使います★ -->
       <a href="https://liff.line.me/2008780635-CFUcjozG" target="_top" class="login-link-btn">LINE連携する (リロード)</a>
     </div>
     <div class="notice-box">
       トリミングの予約には、当院ホームページ、<a href="https://www.emu-vet.jp/trimming/" target="_blank">トリミングページ</a>の注意事項をよくお読みください。<br>
       当院の診察券をお持ちでない場合はお電話（<a href="tel:0474587557">047-458-7557</a>）にてご連絡ください。
     </div>
+    
     <div class="card">
       <label>診察券番号 (数字のみ)</label>
       <input type="tel" id="cardNo" placeholder="例：12345">
@@ -58,6 +65,24 @@
       <label>ペット名</label>
       <input type="text" id="petName" placeholder="例：ポチ">
     </div>
+
+    <!-- ▼▼▼ 追加部分：ラジオボタン ▼▼▼ -->
+    <div class="card">
+      <label style="margin-top:0;">トリミング内容</label>
+      <div class="radio-group">
+        <label class="radio-label"><input type="radio" name="menu" value="シャンプー" checked> シャンプー</label>
+        <label class="radio-label"><input type="radio" name="menu" value="カット"> カット</label>
+      </div>
+
+      <label>シャンプーの種類</label>
+      <div class="radio-group">
+        <label class="radio-label"><input type="radio" name="shampoo" value="EFAシャンプー" checked> EFAシャンプー</label>
+        <label class="radio-label"><input type="radio" name="shampoo" value="カシミヤタッチシャンプー"> カシミヤタッチシャンプー</label>
+        <label class="radio-label"><input type="radio" name="shampoo" value="セラミドシャンプー"> セラミドシャンプー</label>
+      </div>
+    </div>
+    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+
     <div class="card">
       <label style="margin-top:0;">希望日を選択してください</label>
       <p style="font-size:12px; color:#666; margin-bottom:15px;">水・日・祝日は休診です。<br><span style="color:#00b900;">■緑＝第1希望</span> / <span style="color:#0084b9;">■青＝第2希望</span></p>
@@ -70,7 +95,7 @@
     </div>
     <div class="card">
       <label style="margin-top:0;">その他（オプション・ご要望）</label>
-      <textarea id="note" placeholder="例：オプションメニュー、薬浴希望など"></textarea>
+      <textarea id="note" placeholder="例：薬浴希望、耳の汚れが気になるなど"></textarea>
     </div>
     <button id="btn" onclick="submitReservation()">予約リクエストを送信</button>
   </div>
@@ -84,9 +109,9 @@
   </div>
 
   <script>
-    // ▼▼▼ GASURL ▼▼▼
+    // ▼▼▼ ここにGASのURL▼▼▼
     const gasApiUrl = "https://script.google.com/macros/s/AKfycbxFyNZqwMI8M_IaesWwWxu5PjZSLXoLwgdPVuXT1QXBTxFB-i4fbRKrzf5Z0G8Rl8VV/exec"; 
-    // ▲▲▲▲▲▲▲▲▲▲
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     const myLiffId = '2008780635-CFUcjozG'; 
     let currentMode = 1;
@@ -94,13 +119,11 @@
     let myAccessToken = ""; 
 
     window.onload = function() {
-      // GASからカレンダー設定を取得
       fetch(gasApiUrl + "?action=getBlockDates")
         .then(res => res.json())
         .then(data => { blockedDates = data; renderCalendars(); })
         .catch(err => { console.error(err); renderCalendars(); });
 
-      // LIFF初期化
       liff.init({ liffId: myLiffId }).then(() => {
         if (liff.isLoggedIn()) {
           myAccessToken = liff.getAccessToken();
@@ -163,21 +186,39 @@
       if (d1) { const el = document.getElementById('cell-' + d1); if (el) el.classList.add('selected-1'); }
       if (d2) { const el = document.getElementById('cell-' + d2); if (el) el.classList.add('selected-2'); }
     }
+    
     function submitReservation() {
       if (!myAccessToken) { if(!confirm("【注意】\nLINE連携ができていないため、予約の控え通知が届きません。\n\nそれでも予約を送信しますか？")) return; }
+      
       const cardNo = document.getElementById('cardNo').value;
       const ownerName = document.getElementById('ownerName').value;
       const petName = document.getElementById('petName').value;
       const date1 = document.getElementById('val-date1').value;
       const date2 = document.getElementById('val-date2').value;
       const note = document.getElementById('note').value;
+      
+      // ラジオボタンの値を取得
+      const menu = document.querySelector('input[name="menu"]:checked').value;
+      const shampoo = document.querySelector('input[name="shampoo"]:checked').value;
+
       if (!cardNo || !ownerName || !petName || !date1) { alert("必須項目が入力されていません。"); return; }
       
       const btn = document.getElementById('btn');
       btn.disabled = true;
       btn.innerText = "送信中...";
 
-      const data = { cardNo: cardNo, ownerName: ownerName, petName: petName, date1: date1, date2: date2, note: note, accessToken: myAccessToken };
+      // データにmenuとshampooを追加
+      const data = { 
+        cardNo: cardNo, 
+        ownerName: ownerName, 
+        petName: petName, 
+        menu: menu, 
+        shampoo: shampoo,
+        date1: date1, 
+        date2: date2, 
+        note: note, 
+        accessToken: myAccessToken 
+      };
       
       fetch(gasApiUrl, {
         method: 'POST',
@@ -196,6 +237,7 @@
       })
       .catch(err => { alert("通信エラー: " + err); btn.disabled = false; });
     }
+    
     function formatDate(dt) {
       const y = dt.getFullYear();
       const m = ('00' + (dt.getMonth()+1)).slice(-2);
