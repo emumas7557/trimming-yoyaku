@@ -10,14 +10,14 @@
     h2 { text-align: center; color: #00b900; margin-top: 0; margin-bottom: 10px; }
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
     label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555; }
-    input[type="text"], input[type="tel"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
+    input[type="text"], input[type="tel"], textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; background-color: #fff; }
     textarea { height: 100px; resize: vertical; line-height: 1.5; }
     
-    /* ラジオボタンのデザイン */
-    .radio-group { margin-top: 5px; }
-    .radio-label { display: block; padding: 10px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; }
-    .radio-label:last-child { border-bottom: none; }
-    .radio-label input { margin-right: 10px; transform: scale(1.2); }
+    /* ラジオボタン・チェックボックスのデザイン */
+    .radio-group, .checkbox-group { margin-top: 5px; }
+    .radio-label, .checkbox-label { display: block; padding: 10px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; }
+    .radio-label:last-child, .checkbox-label:last-child { border-bottom: none; }
+    .radio-label input, .checkbox-label input { margin-right: 10px; transform: scale(1.2); }
 
     .date-display { display: flex; gap: 10px; margin-bottom: 10px; }
     .date-box { flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 8px; text-align: center; background: #fafafa; cursor: pointer; }
@@ -66,7 +66,7 @@
       <input type="text" id="petName" placeholder="例：ポチ">
     </div>
 
-    <!-- ▼▼▼ 追加部分：ラジオボタン ▼▼▼ -->
+    <!-- ▼▼▼ 修正部分：メニュー・シャンプー・オプション ▼▼▼ -->
     <div class="card">
       <label style="margin-top:0;">トリミング内容</label>
       <div class="radio-group">
@@ -74,14 +74,23 @@
         <label class="radio-label"><input type="radio" name="menu" value="カット"> カット</label>
       </div>
 
-      <label>シャンプーの種類</label>
-      <div class="radio-group">
-        <label class="radio-label"><input type="radio" name="shampoo" value="EFAシャンプー" checked> EFAシャンプー</label>
-        <label class="radio-label"><input type="radio" name="shampoo" value="カシミヤタッチシャンプー"> カシミヤタッチシャンプー</label>
-        <label class="radio-label"><input type="radio" name="shampoo" value="セラミドシャンプー"> セラミドシャンプー</label>
+      <label>シャンプーの種類（任意）</label>
+      <select id="shampoo">
+        <option value="">指定なし</option>
+        <option value="EFAシャンプー">EFAシャンプー</option>
+        <option value="カシミヤタッチシャンプー">カシミヤタッチシャンプー</option>
+        <option value="セラミドシャンプー">セラミドシャンプー</option>
+      </select>
+
+      <label>オプション（複数選択可）</label>
+      <div class="checkbox-group">
+        <label class="checkbox-label"><input type="checkbox" name="option" value="ましゅまろ泡パック"> ましゅまろ泡パック</label>
+        <label class="checkbox-label"><input type="checkbox" name="option" value="ハーブパック＋ハーブ湯"> ハーブパック＋ハーブ湯</label>
+        <label class="checkbox-label"><input type="checkbox" name="option" value="ダーマモイストバス"> ダーマモイストバス</label>
+        <label class="checkbox-label"><input type="checkbox" name="option" value="薬浴"> 薬浴</label>
       </div>
     </div>
-    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
 
     <div class="card">
       <label style="margin-top:0;">希望日を選択してください</label>
@@ -95,7 +104,7 @@
     </div>
     <div class="card">
       <label style="margin-top:0;">その他（オプション・ご要望）</label>
-      <textarea id="note" placeholder="例：薬浴希望、耳の汚れが気になるなど"></textarea>
+      <textarea id="note" placeholder="例：耳の汚れが気になるなど"></textarea>
     </div>
     <button id="btn" onclick="submitReservation()">予約リクエストを送信</button>
   </div>
@@ -109,7 +118,7 @@
   </div>
 
   <script>
-    // ▼▼▼ ここにGASのURL▼▼▼
+    // ▼▼▼ここにGASのURL▼▼▼
     const gasApiUrl = "https://script.google.com/macros/s/AKfycbxFyNZqwMI8M_IaesWwWxu5PjZSLXoLwgdPVuXT1QXBTxFB-i4fbRKrzf5Z0G8Rl8VV/exec"; 
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲
 
@@ -197,9 +206,14 @@
       const date2 = document.getElementById('val-date2').value;
       const note = document.getElementById('note').value;
       
-      // ラジオボタンの値を取得
+      // データ取得
       const menu = document.querySelector('input[name="menu"]:checked').value;
-      const shampoo = document.querySelector('input[name="shampoo"]:checked').value;
+      const shampoo = document.getElementById('shampoo').value;
+      
+      // チェックボックス（オプション）の取得
+      const optionEls = document.querySelectorAll('input[name="option"]:checked');
+      // 選択された値をカンマ区切りで結合（例: "ましゅまろ泡パック, 薬浴"）
+      const options = Array.from(optionEls).map(el => el.value).join(', ');
 
       if (!cardNo || !ownerName || !petName || !date1) { alert("必須項目が入力されていません。"); return; }
       
@@ -207,13 +221,13 @@
       btn.disabled = true;
       btn.innerText = "送信中...";
 
-      // データにmenuとshampooを追加
       const data = { 
         cardNo: cardNo, 
         ownerName: ownerName, 
         petName: petName, 
         menu: menu, 
         shampoo: shampoo,
+        options: options, // 追加
         date1: date1, 
         date2: date2, 
         note: note, 
