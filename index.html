@@ -13,7 +13,6 @@
     input[type="text"], input[type="tel"], textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; background-color: #fff; }
     textarea { height: 100px; resize: vertical; line-height: 1.5; }
     
-    /* ラジオボタン・チェックボックスのデザイン */
     .radio-group, .checkbox-group { margin-top: 5px; }
     .radio-label, .checkbox-label { display: block; padding: 10px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; }
     .radio-label:last-child, .checkbox-label:last-child { border-bottom: none; }
@@ -66,7 +65,6 @@
       <input type="text" id="petName" placeholder="例：ポチ">
     </div>
 
-    <!-- ▼▼▼ 修正部分：メニュー・シャンプー・オプション ▼▼▼ -->
     <div class="card">
       <label style="margin-top:0;">トリミング内容</label>
       <div class="radio-group">
@@ -90,7 +88,6 @@
         <label class="checkbox-label"><input type="checkbox" name="option" value="薬浴"> 薬浴</label>
       </div>
     </div>
-    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
 
     <div class="card">
       <label style="margin-top:0;">希望日を選択してください</label>
@@ -103,8 +100,8 @@
       <div id="calendar-container">読み込み中...</div>
     </div>
     <div class="card">
-      <label style="margin-top:0;">その他（診察・ご要望）</label>
-      <textarea id="note" placeholder="例：耳の汚れが気になる、ワクチン希望など"></textarea>
+      <label style="margin-top:0;">その他（オプション・ご要望）</label>
+      <textarea id="note" placeholder="例：耳の汚れが気になるなど"></textarea>
     </div>
     <button id="btn" onclick="submitReservation()">予約リクエストを送信</button>
   </div>
@@ -118,9 +115,9 @@
   </div>
 
   <script>
-    // ▼▼▼ここにGASのURL▼▼▼
+    // ▼▼▼ ここにGASのURL ▼▼▼
     const gasApiUrl = "https://script.google.com/macros/s/AKfycbxFyNZqwMI8M_IaesWwWxu5PjZSLXoLwgdPVuXT1QXBTxFB-i4fbRKrzf5Z0G8Rl8VV/exec"; 
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     const myLiffId = '2008780635-CFUcjozG'; 
     let currentMode = 1;
@@ -128,11 +125,16 @@
     let myAccessToken = ""; 
 
     window.onload = function() {
+      // 1. 保存されたユーザー情報を復元（オートフィル）
+      loadUserData();
+
+      // 2. カレンダー情報取得
       fetch(gasApiUrl + "?action=getBlockDates")
         .then(res => res.json())
         .then(data => { blockedDates = data; renderCalendars(); })
         .catch(err => { console.error(err); renderCalendars(); });
 
+      // 3. LIFF初期化
       liff.init({ liffId: myLiffId }).then(() => {
         if (liff.isLoggedIn()) {
           myAccessToken = liff.getAccessToken();
@@ -146,6 +148,27 @@
       document.getElementById('status-bar').className = "connected";
       document.getElementById('login-area').style.display = 'none';
     }
+
+    // ▼▼▼ 入力情報の保存・読み込み機能 ▼▼▼
+    function saveUserData(cardNo, ownerName, petName) {
+      const userData = { cardNo: cardNo, ownerName: ownerName, petName: petName };
+      localStorage.setItem('trimming_user_data', JSON.stringify(userData));
+    }
+
+    function loadUserData() {
+      const savedData = localStorage.getItem('trimming_user_data');
+      if (savedData) {
+        try {
+          const userData = JSON.parse(savedData);
+          if (userData.cardNo) document.getElementById('cardNo').value = userData.cardNo;
+          if (userData.ownerName) document.getElementById('ownerName').value = userData.ownerName;
+          if (userData.petName) document.getElementById('petName').value = userData.petName;
+        } catch (e) {
+          console.log("データ読み込みエラー", e);
+        }
+      }
+    }
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     function renderCalendars() {
       const container = document.getElementById('calendar-container');
@@ -206,17 +229,16 @@
       const date2 = document.getElementById('val-date2').value;
       const note = document.getElementById('note').value;
       
-      // データ取得
       const menu = document.querySelector('input[name="menu"]:checked').value;
       const shampoo = document.getElementById('shampoo').value;
-      
-      // チェックボックス（オプション）の取得
       const optionEls = document.querySelectorAll('input[name="option"]:checked');
-      // 選択された値をカンマ区切りで結合（例: "ましゅまろ泡パック, 薬浴"）
       const options = Array.from(optionEls).map(el => el.value).join(', ');
 
       if (!cardNo || !ownerName || !petName || !date1) { alert("必須項目が入力されていません。"); return; }
       
+      // ▼ 送信前にユーザー情報を端末に保存
+      saveUserData(cardNo, ownerName, petName);
+
       const btn = document.getElementById('btn');
       btn.disabled = true;
       btn.innerText = "送信中...";
@@ -227,7 +249,7 @@
         petName: petName, 
         menu: menu, 
         shampoo: shampoo,
-        options: options, // 追加
+        options: options, 
         date1: date1, 
         date2: date2, 
         note: note, 
